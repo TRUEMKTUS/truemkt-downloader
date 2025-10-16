@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRUEMKT - Editor Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #000; color: #fff; padding: 20px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { text-align: center; padding: 40px 0 30px; border-bottom: 1px solid #333; }
+.header h1 { font-size: 2.5em; letter-spacing: 8px; font-weight: 300; margin-bottom: 8px; }
+.header p { color: #666; font-size: 0.9em; letter-spacing: 2px; text-transform: uppercase; }
+.login-section { max-width: 500px; margin: 60px auto; padding: 40px; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; }
+.login-title { font-size: 1.5em; margin-bottom: 30px; text-align: center; font-weight: 300; letter-spacing: 2px; }
+.form-group { margin-bottom: 25px; }
+.form-group label { display: block; margin-bottom: 10px; font-size: 0.85em; letter-spacing: 1px; text-transform: uppercase; color: #999; }
+.form-group input { width: 100%; padding: 14px; background: #000; border: 1px solid #333; color: #fff; font-size: 1em; border-radius: 4px; transition: all 0.3s; }
+.form-group input:focus { outline: none; border-color: #fff; }
+.login-btn { width: 100%; padding: 16px; background: #fff; color: #000; border: none; cursor: pointer; font-size: 1em; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; border-radius: 4px; transition: all 0.3s; }
+.login-btn:hover { background: #ddd; }
+.login-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+.stats { display: flex; justify-content: center; gap: 30px; padding: 30px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; flex-wrap: wrap; }
+.stat-card { background: #050505; border: 1px solid #1a1a1a; padding: 25px; border-radius: 8px; text-align: center; min-width: 180px; border-left: 3px solid #fff; }
+.stat-number { font-size: 2.5em; font-weight: 300; margin-bottom: 8px; }
+.stat-label { color: #666; font-size: 0.85em; letter-spacing: 1px; text-transform: uppercase; }
+.content { padding: 40px 20px; }
+.editor-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 20px; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; }
+.editor-name { font-size: 1.2em; font-weight: 600; letter-spacing: 1px; }
+.logout-btn { background: #fff; color: #000; border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; cursor: pointer; transition: all 0.3s; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85em; }
+.logout-btn:hover { background: #ddd; }
+.strategies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+.strategy-card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 30px; transition: all 0.3s; border-left: 3px solid #fff; }
+.strategy-card:hover { background: #0f0f0f; transform: translateY(-2px); }
+.strategy-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #1a1a1a; }
+.strategy-number { font-size: 1.5em; font-weight: 600; margin-bottom: 8px; letter-spacing: 1px; }
+.brand-name { color: #999; font-size: 0.9em; letter-spacing: 0.5px; }
+.strategy-info { margin-bottom: 20px; }
+.info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; }
+.info-label { color: #666; text-transform: uppercase; font-size: 0.8em; letter-spacing: 0.5px; }
+.info-value { color: #fff; font-weight: 500; }
+.open-folder-btn { width: 100%; padding: 14px; background: #fff; color: #000; border: none; cursor: pointer; font-size: 0.9em; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; border-radius: 4px; transition: all 0.3s; }
+.open-folder-btn:hover { background: #ddd; }
+.loading { text-align: center; padding: 60px; color: #666; font-size: 1.1em; }
+.no-strategies { text-align: center; padding: 80px 30px; color: #666; }
+.no-strategies h3 { font-size: 1.8em; margin-bottom: 15px; color: #999; }
+.notification { position: fixed; top: 30px; right: 30px; padding: 20px 30px; border-radius: 8px; font-weight: 600; font-size: 1em; z-index: 1000; transform: translateX(400px); transition: transform 0.4s ease; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.notification.show { transform: translateX(0); }
+.notification.success { background: #001a00; color: #00ff00; border: 1px solid #00ff00; }
+.notification.error { background: #1a0000; color: #ff0000; border: 1px solid #ff0000; }
+.notification.info { background: #00001a; color: #0099ff; border: 1px solid #0099ff; }
+.mark-done-btn { width: 100%; padding: 14px; background: #00ff00; color: #000; border: none; cursor: pointer; font-size: 0.9em; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; border-radius: 4px; transition: all 0.3s; margin-top: 10px; }
+.mark-done-btn:hover { background: #00cc00; }
+.mark-done-btn:disabled { background: #1a1a1a; color: #333; cursor: not-allowed; }
+.confirm-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; }
+.confirm-modal.show { display: flex; }
+.confirm-content { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 8px; padding: 30px; max-width: 400px; text-align: center; }
+.confirm-message { font-size: 1.1em; margin-bottom: 25px; line-height: 1.5; }
+.confirm-buttons { display: flex; gap: 15px; justify-content: center; }
+.confirm-yes { background: #00ff00; color: #000; padding: 12px 30px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+.confirm-yes:hover { background: #00cc00; }
+.confirm-no { background: #1a1a1a; color: #fff; padding: 12px 30px; border: 1px solid #333; border-radius: 4px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+.confirm-no:hover { background: #2a2a2a; }
+@media (max-width: 768px) {
+.container { margin: 10px; }
+.header h1 { font-size: 2em; }
+.stats { flex-direction: column; gap: 15px; }
+.editor-info { flex-direction: column; gap: 15px; text-align: center; }
+.strategies-grid { grid-template-columns: 1fr; }
+}
+</style>
+<style>
+.file-explorer-modal {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0,0,0,0.95);
+z-index: 9999;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 20px;
+}
+
+.explorer-container {
+background: #0a0a0a;
+border: 1px solid #1a1a1a;
+border-radius: 8px;
+max-width: 1000px;
+width: 100%;
+max-height: 90vh;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+}
+
+.explorer-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 25px 30px;
+border-bottom: 1px solid #1a1a1a;
+}
+
+.explorer-title {
+font-size: 1.5em;
+font-weight: 300;
+letter-spacing: 1px;
+margin: 0;
+}
+
+.explorer-close-btn {
+background: #fff;
+color: #000;
+border: none;
+padding: 10px 20px;
+border-radius: 4px;
+cursor: pointer;
+font-weight: 600;
+font-size: 0.9em;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+transition: all 0.3s;
+}
+
+.explorer-close-btn:hover {
+background: #ddd;
+}
+
+.explorer-breadcrumb {
+padding: 15px 30px;
+border-bottom: 1px solid #1a1a1a;
+color: #666;
+font-size: 0.9em;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.breadcrumb-item {
+cursor: pointer;
+transition: color 0.3s;
+}
+
+.breadcrumb-item:hover {
+color: #fff;
+}
+
+.breadcrumb-separator {
+color: #333;
+}
+
+.explorer-content {
+overflow-y: auto;
+padding: 20px 30px;
+flex: 1;
+}
+
+.folder-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+gap: 15px;
+}
+
+.folder-item {
+background: #050505;
+border: 1px solid #1a1a1a;
+border-radius: 6px;
+padding: 25px 20px;
+text-align: center;
+cursor: pointer;
+transition: all 0.3s;
+}
+
+.folder-item:hover {
+background: #0f0f0f;
+border-color: #333;
+transform: translateY(-2px);
+}
+
+.folder-icon {
+font-size: 3em;
+margin-bottom: 12px;
+}
+
+.folder-name {
+font-weight: 600;
+font-size: 0.95em;
+word-break: break-word;
+}
+
+.folder-count {
+color: #666;
+font-size: 0.8em;
+margin-top: 5px;
+}
+
+.video-list {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+
+.video-item {
+background: #050505;
+border: 1px solid #1a1a1a;
+border-radius: 6px;
+padding: 20px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+transition: all 0.3s;
+}
+
+.video-item:hover {
+background: #0f0f0f;
+border-color: #333;
+}
+
+.video-info {
+flex: 1;
+min-width: 0;
+}
+
+.video-name {
+font-weight: 600;
+font-size: 0.95em;
+word-break: break-word;
+margin-bottom: 5px;
+}
+
+.video-size {
+color: #666;
+font-size: 0.8em;
+}
+
+.video-actions {
+display: flex;
+gap: 10px;
+margin-left: 20px;
+}
+
+.download-btn {
+background: #fff;
+color: #000;
+padding: 10px 20px;
+border-radius: 4px;
+text-decoration: none;
+font-weight: 600;
+font-size: 0.85em;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+white-space: nowrap;
+transition: all 0.3s;
+border: none;
+cursor: pointer;
+}
+
+.download-btn:hover {
+background: #ddd;
+}
+
+.download-all-btn {
+background: #fff;
+color: #000;
+padding: 15px 30px;
+border-radius: 4px;
+font-weight: 600;
+font-size: 0.9em;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+border: none;
+cursor: pointer;
+margin-bottom: 20px;
+width: 100%;
+transition: all 0.3s;
+}
+
+.download-all-btn:hover {
+background: #ddd;
+}
+
+.explorer-loading {
+text-align: center;
+padding: 60px;
+color: #666;
+font-size: 1.1em;
+}
+
+.back-btn {
+background: #1a1a1a;
+color: #fff;
+padding: 10px 20px;
+border-radius: 4px;
+font-weight: 600;
+font-size: 0.85em;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+border: none;
+cursor: pointer;
+margin-bottom: 20px;
+transition: all 0.3s;
+}
+
+.back-btn:hover {
+background: #2a2a2a;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>TRUEMKT</h1>
+<p>Editor Panel</p>
+</div>
+<div id="loginSection" class="login-section">
+<div class="login-title">Enter Your Prefix</div>
+<div class="form-group">
+<label>Editor Prefix</label>
+<input type="text" id="prefixInput" placeholder="Enter your prefix..." maxlength="50" onkeypress="handleLoginEnter(event)">
+</div>
+<button class="login-btn" onclick="login()" id="loginBtn">Access Panel</button>
+</div>
+<div id="mainContent" style="display:none;">
+<div class="stats">
+<div class="stat-card">
+<div class="stat-number" id="totalBanks">0</div>
+<div class="stat-label">Bank Clips</div>
+</div>
+<div class="stat-card">
+<div class="stat-number" id="totalVideos">0</div>
+<div class="stat-label">Individual Videos</div>
+</div>
+<div class="stat-card">
+<div class="stat-number" id="totalStrategies">0</div>
+<div class="stat-label">Total Items</div>
+</div>
+</div>
+<div class="content">
+<div class="editor-info">
+<div>
+<div style="color: #666; font-size: 0.8em; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;">Logged in as</div>
+<div class="editor-name" id="editorName">-</div>
+</div>
+<button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+<div id="loading" class="loading" style="display:none;">
+Loading your assignments...
+</div>
+<div id="strategiesGrid" class="strategies-grid"></div>
+<div id="noStrategies" class="no-strategies" style="display:none;">
+<h3>No assignments found</h3>
+<p>You don't have any work assigned yet.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="notification" class="notification"></div>
+<div id="confirmModal" class="confirm-modal">
+<div class="confirm-content">
+<div class="confirm-message" id="confirmMessage"></div>
+<div class="confirm-buttons">
+<button class="confirm-yes" id="confirmYes">Yes</button>
+<button class="confirm-no" id="confirmNo">Cancel</button>
+</div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://tsvnuathjyegjumudvbd.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRzdm51YXRoanllZ2p1bXVkdmJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyODY5NTMsImV4cCI6MjA2Nzg2Mjk1M30.tDa-beY7SOKZ2d7EDWEi8H_5b4pjKrgtqJlrj9Sv98Y';
+const BUCKET = 'VIDEO-BUCKET';
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentPrefix = '';
+let strategies = [];
+let currentExplorerPath = [];
+let currentExplorerData = null;
+let currentItemType = null;
+
+function showNotification(msg, type = 'success') {
+const notification = document.getElementById('notification');
+notification.textContent = msg;
+notification.className = `notification ${type}`;
+notification.classList.add('show');
+setTimeout(() => notification.classList.remove('show'), 4000);
+}
+
+function handleLoginEnter(event) {
+if (event.key === 'Enter') {
+login();
+}
+}
+async function login() {
+const input = document.getElementById('prefixInput');
+const loginBtn = document.getElementById('loginBtn');
+const prefix = input.value.trim().toLowerCase();
+
+if (!prefix) {
+showNotification('Please enter your prefix', 'error');
+input.focus();
+return;
+}
+
+loginBtn.disabled = true;
+loginBtn.textContent = 'Loading...';
+
+try {
+const { data: stratData } = await supabaseClient
+.from('tm_strategies')
+.select('id')
+.eq('editor_prefix', prefix)
+.eq('status', 'EDITOR ASSIGNED')
+.limit(1);
+
+const { data: vidData } = await supabaseClient
+.from('videos')
+.select('id')
+.eq('editor_prefix', prefix)
+.eq('status', 'EDITOR ASSIGNED')
+.limit(1);
+
+if ((!stratData || stratData.length === 0) && (!vidData || vidData.length === 0)) {
+showNotification('No assignments found for this prefix', 'error');
+loginBtn.disabled = false;
+loginBtn.textContent = 'Access Panel';
+return;
+}
+
+currentPrefix = prefix;
+document.getElementById('loginSection').style.display = 'none';
+document.getElementById('mainContent').style.display = 'block';
+document.getElementById('editorName').textContent = prefix.toUpperCase();
+
+await loadStrategies();
+
+} catch (error) {
+console.error('Unexpected error:', error);
+showNotification('Unexpected error occurred', 'error');
+loginBtn.disabled = false;
+loginBtn.textContent = 'Access Panel';
+}
+}
+
+function logout() {
+currentPrefix = '';
+strategies = [];
+document.getElementById('prefixInput').value = '';
+document.getElementById('loginSection').style.display = 'block';
+document.getElementById('mainContent').style.display = 'none';
+document.getElementById('strategiesGrid').innerHTML = '';
+document.getElementById('loginBtn').disabled = false;
+document.getElementById('loginBtn').textContent = 'Access Panel';
+}
+
+function showLoading(show) {
+const loadingDiv = document.getElementById('loading');
+const strategiesGrid = document.getElementById('strategiesGrid');
+const noStrategiesDiv = document.getElementById('noStrategies');
+if (show) {
+loadingDiv.style.display = 'block';
+strategiesGrid.style.display = 'none';
+noStrategiesDiv.style.display = 'none';
+} else {
+loadingDiv.style.display = 'none';
+}
+}
+
+function formatDate(dateString) {
+if (!dateString) return 'N/A';
+const date = new Date(dateString);
+return date.toLocaleDateString('en-US', {
+month: 'short',
+day: 'numeric',
+year: 'numeric'
+});
+}
+
+function formatFileSize(bytes) {
+if (!bytes || bytes === 0) return 'Unknown size';
+const mb = bytes / (1024 * 1024);
+if (mb < 1) return `${(bytes / 1024).toFixed(1)} KB`;
+return `${mb.toFixed(1)} MB`;
+}
+async function loadStrategies() {
+try {
+showLoading(true);
+const allItems = [];
+
+const { data: strategiesData, error: strategiesError } = await supabaseClient
+.from('tm_strategies')
+.select('id, strategy_number, client_id, bank_clips, bank_clips_date, status')
+.eq('editor_prefix', currentPrefix)
+.eq('status', 'EDITOR ASSIGNED')
+.order('strategy_number', { ascending: true });
+
+if (strategiesError) {
+console.error('Error loading strategies:', strategiesError);
+showNotification('Error loading strategies', 'error');
+}
+
+const { data: videosData, error: videosError } = await supabaseClient
+.from('videos')
+.select('id, strategy_number, brand, title, type, description, created_at, status, prefix')
+.eq('editor_prefix', currentPrefix)
+.eq('status', 'EDITOR ASSIGNED')
+.order('created_at', { ascending: false });
+
+if (videosError) {
+console.error('Error loading videos:', videosError);
+showNotification('Error loading videos', 'error');
+}
+
+if (strategiesData && strategiesData.length > 0) {
+const clientIds = [...new Set(strategiesData.map(s => s.client_id))];
+const { data: clientsData } = await supabaseClient
+.from('clients')
+.select('client_id, brand_name')
+.in('client_id', clientIds);
+
+const clientsMap = {};
+(clientsData || []).forEach(client => {
+clientsMap[client.client_id] = client.brand_name;
+});
+
+strategiesData.forEach(strategy => {
+allItems.push({
+type: 'bank',
+...strategy,
+brand_name: clientsMap[strategy.client_id] || 'Unknown'
+});
+});
+}
+
+if (videosData && videosData.length > 0) {
+videosData.forEach(video => {
+allItems.push({
+type: 'video',
+id: video.id,
+strategy_number: video.strategy_number,
+brand: video.brand,
+brand_name: video.brand || 'Unknown Brand',
+title: video.title,
+type_video: video.type,
+description: video.description,
+created_at: video.created_at,
+status: video.status,
+prefix: video.editor_prefix
+});
+});
+}
+
+strategies = allItems;
+displayStrategies(allItems);
+updateStats();
+
+} catch (error) {
+console.error('Unexpected error:', error);
+showNotification('Unexpected error occurred', 'error');
+} finally {
+showLoading(false);
+}
+}
+
+function updateStats() {
+const banks = strategies.filter(i => i.type === 'bank').length;
+const videos = strategies.filter(i => i.type === 'video').length;
+document.getElementById('totalBanks').textContent = banks;
+document.getElementById('totalVideos').textContent = videos;
+document.getElementById('totalStrategies').textContent = strategies.length;
+}
+function displayStrategies(items) {
+const strategiesGrid = document.getElementById('strategiesGrid');
+const noStrategiesDiv = document.getElementById('noStrategies');
+
+strategiesGrid.innerHTML = '';
+
+if (items.length === 0) {
+strategiesGrid.style.display = 'none';
+noStrategiesDiv.style.display = 'block';
+return;
+}
+
+strategiesGrid.style.display = 'grid';
+noStrategiesDiv.style.display = 'none';
+
+items.forEach(item => {
+const card = document.createElement('div');
+card.className = 'strategy-card';
+
+if (item.type === 'bank') {
+const bankDate = formatDate(item.bank_clips_date);
+const bankId = item.bank_clips || 'Not available';
+
+card.innerHTML = `
+<div class="strategy-header">
+<div class="strategy-number">📦 Bank Clips - Strategy ${item.strategy_number}</div>
+<div class="brand-name">${item.brand_name}</div>
+</div>
+<div class="strategy-info">
+<div class="info-row">
+<span class="info-label">Bank ID</span>
+<span class="info-value">${bankId}</span>
+</div>
+<div class="info-row">
+<span class="info-label">Created</span>
+<span class="info-value">${bankDate}</span>
+</div>
+</div>
+<button class="open-folder-btn" onclick="downloadFullFolder('${item.brand_name}', '${bankId}', 'bank', event)">
+📥 DOWNLOAD FULL FOLDER
+</button>
+<button class="mark-done-btn" onclick="markItemDone('bank', '${item.strategy_number}', null)">
+✓ Mark as Done
+</button>
+`;
+
+} else if (item.type === 'video') {
+const videoDate = formatDate(item.created_at);
+const videoTitle = item.title || 'Untitled';
+
+card.innerHTML = `
+<div class="strategy-header">
+<div class="strategy-number">🎬 Video ${item.id}</div>
+<div class="brand-name">${item.brand_name}</div>
+</div>
+<div class="strategy-info">
+<div class="info-row">
+<span class="info-label">Strategy</span>
+<span class="info-value">#${item.strategy_number}</span>
+</div>
+<div class="info-row">
+<span class="info-label">Type</span>
+<span class="info-value">${item.type_video || item.type}</span>
+</div>
+<div class="info-row">
+<span class="info-label">Title</span>
+<span class="info-value">${videoTitle}</span>
+</div>
+<div class="info-row">
+<span class="info-label">Created</span>
+<span class="info-value">${videoDate}</span>
+</div>
+</div>
+<button class="open-folder-btn" onclick="downloadFullFolder('${item.brand_name}', '${item.id}', 'video', event)">
+📥 DOWNLOAD FULL FOLDER
+</button>
+<button class="mark-done-btn" onclick="markItemDone('video', null, '${item.id}')">
+✓ Mark as Done
+</button>
+`;
+}
+
+strategiesGrid.appendChild(card);
+});
+}
+
+async function openFolder(brandName, identifier, type) {
+    // Ahora descarga directamente en lugar de abrir el explorador
+    if (type === 'bank') {
+        if (!identifier || identifier === 'Not available') {
+            showNotification('No video bank available for this strategy', 'error');
+            return;
+        }
+        await downloadFullFolder(brandName, identifier, type);
+    } else if (type === 'video') {
+        await downloadFullFolder(brandName, identifier, type);
+    }
+}
+
+function showFileExplorer(brandName, identifier, type) {
+const modal = document.createElement('div');
+modal.className = 'file-explorer-modal';
+modal.id = 'fileExplorerModal';
+const title = type === 'bank' ? `${brandName} - Bank ${identifier}` : `${brandName} - Video ${identifier}`;
+modal.innerHTML = `
+<div class="explorer-container">
+<div class="explorer-header">
+<h2 class="explorer-title">${title}</h2>
+<button class="explorer-close-btn" onclick="closeFileExplorer()">CLOSE</button>
+</div>
+<div class="explorer-breadcrumb" id="explorerBreadcrumb">
+<span class="breadcrumb-item" onclick="navigateToRoot()">📁 Root</span>
+</div>
+<div class="explorer-content" id="explorerContent">
+<div class="explorer-loading">Loading folder contents...</div>
+</div>
+</div>
+`;
+document.body.appendChild(modal);
+
+if (type === 'bank') {
+loadFolderContents(brandName, identifier);
+} else if (type === 'video') {
+loadVideoFolderContents(identifier);
+}
+}
+
+function closeFileExplorer() {
+const modal = document.getElementById('fileExplorerModal');
+if (modal) {
+modal.remove();
+}
+currentExplorerPath = [];
+currentExplorerData = null;
+currentItemType = null;
+}
+
+function navigateToRoot() {
+currentExplorerPath = [];
+if (currentItemType === 'bank') {
+loadFolderContents(currentExplorerData.brandName, currentExplorerData.identifier);
+} else if (currentItemType === 'video') {
+loadVideoFolderContents(currentExplorerData.identifier);
+}
+}
+
+function navigateToProduct(productName) {
+currentExplorerPath = [productName];
+loadFolderContents(currentExplorerData.brandName, currentExplorerData.identifier, productName);
+}
+
+function downloadAllVideos() {
+const videoLinks = document.querySelectorAll('.video-item .download-btn');
+videoLinks.forEach((link, index) => {
+setTimeout(() => {
+link.click();
+}, index * 200);
+});
+showNotification(`Downloading ${videoLinks.length} videos...`, 'success');
+}
+
+function copyLinkToClipboard(url, filename) {
+navigator.clipboard.writeText(url).then(() => {
+showNotification(`✓ Link copied for ${filename}! Paste it in a new tab to download.`, 'success');
+}).catch(err => {
+console.error('Error copying link:', err);
+showNotification('Error copying link to clipboard', 'error');
+});
+}
+async function downloadFullFolder(brandName, identifier, type) {
+    let folderPath;
+    
+    if (type === 'bank') {
+        const cleanBrandName = brandName.replace(/\s+/g, '_');
+        folderPath = `${cleanBrandName}_${identifier}`;
+    } else if (type === 'video') {
+        folderPath = identifier;
+    }
+
+    const cardElement = event.target.closest('.strategy-card');
+    const downloadButton = event.target;
+
+    downloadButton.disabled = true;
+    downloadButton.textContent = 'Generando ZIP...';
+
+    const progressElement = document.createElement('div');
+    progressElement.className = 'download-progress';
+    progressElement.style.cssText = `
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0%;
+        height: 5px;
+        background-color: #00ff00;
+        transition: width 0.3s ease;
+    `;
+    cardElement.style.position = 'relative';
+    cardElement.appendChild(progressElement);
+
+    try {
+        progressElement.style.width = '30%';
+        
+        const response = await fetch('https://truemkt-downloader.vercel.app/api/download-folder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                folderPath: folderPath
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || response.statusText);
+        }
+
+        progressElement.style.width = '70%';
+        downloadButton.textContent = 'Descargando ZIP...';
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${folderPath}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+
+        progressElement.style.width = '100%';
+        downloadButton.disabled = false;
+        downloadButton.textContent = '✓ DESCARGA COMPLETA';
+        
+        setTimeout(() => {
+            downloadButton.textContent = 'DOWNLOAD FULL FOLDER';
+            progressElement.remove();
+        }, 2000);
+
+        showNotification('✓ Carpeta descargada como ZIP', 'success');
+
+    } catch (error) {
+        console.error('Error completo:', error);
+        downloadButton.disabled = false;
+        downloadButton.textContent = 'ERROR - REINTENTAR';
+        progressElement.style.backgroundColor = '#ff0000';
+        showNotification('Error: ' + error.message, 'error');
+        
+        setTimeout(() => {
+            downloadButton.textContent = 'DOWNLOAD FULL FOLDER';
+            progressElement.remove();
+        }, 3000);
+    }
+}
+async function loadFolderContents(brandName, bankId, productName = null) {
+const content = document.getElementById('explorerContent');
+content.innerHTML = '<div class="explorer-loading">Loading...</div>';
+
+try {
+const cleanBrandName = brandName.replace(/\s+/g, '_');
+const folderPath = `${cleanBrandName}_${bankId}`;
+
+if (!productName) {
+const { data: items, error } = await supabaseClient.storage
+.from(BUCKET)
+.list(folderPath, {
+limit: 1000,
+sortBy: { column: 'name', order: 'asc' }
+});
+
+if (error) {
+console.error('Error loading bank contents:', error);
+content.innerHTML = `<div class="explorer-loading">Error: ${error.message}</div>`;
+return;
+}
+
+if (!items || items.length === 0) {
+content.innerHTML = '<div class="explorer-loading">No folders found</div>';
+return;
+}
+
+const folders = [];
+const documents = [];
+
+for (const item of items) {
+if (!item.name) continue;
+
+if (item.name.includes('.')) {
+const filePath = `${folderPath}/${item.name}`;
+const { data: urlData } = supabaseClient.storage
+.from(BUCKET)
+.getPublicUrl(filePath);
+
+documents.push({
+name: item.name,
+url: urlData.publicUrl,
+size: item.metadata?.size || 0
+});
+} else {
+const { data: subItems } = await supabaseClient.storage
+.from(BUCKET)
+.list(`${folderPath}/${item.name}`, { limit: 1000 });
+
+if (item.name.toLowerCase() === 'script') {
+if (subItems && subItems.length > 0) {
+for (const subFile of subItems) {
+if (!subFile.name || !subFile.name.includes('.')) continue;
+
+const ext = subFile.name.toLowerCase();
+if (ext.endsWith('.doc') || ext.endsWith('.docx') || ext.endsWith('.txt') || ext.endsWith('.pdf')) {
+const filePath = `${folderPath}/${item.name}/${subFile.name}`;
+const { data: urlData } = supabaseClient.storage
+.from(BUCKET)
+.getPublicUrl(filePath);
+
+documents.push({
+name: subFile.name,
+url: urlData.publicUrl,
+size: subFile.metadata?.size || 0
+});
+}
+}
+}
+} else {
+const videoCount = subItems ? subItems.filter(f => f.name).length : 0;
+folders.push({
+name: item.name,
+count: videoCount
+});
+}
+}
+}
+
+const breadcrumb = document.getElementById('explorerBreadcrumb');
+breadcrumb.innerHTML = '<span class="breadcrumb-item" onclick="navigateToRoot()">📁 Root</span>';
+
+content.innerHTML = '<div id="contentArea"></div>';
+const contentArea = document.getElementById('contentArea');
+
+if (documents.length > 0) {
+const docSection = document.createElement('div');
+docSection.style.marginBottom = '30px';
+
+const docHeader = document.createElement('div');
+docHeader.style.cssText = 'font-size: 0.9em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: 600;';
+docHeader.textContent = `📄 Documents (${documents.length})`;
+docSection.appendChild(docHeader);
+
+const docList = document.createElement('div');
+docList.className = 'video-list';
+
+documents.forEach(doc => {
+const fileItem = document.createElement('div');
+fileItem.className = 'video-item';
+fileItem.innerHTML = `
+<div class="video-info">
+<div class="video-name">📄 ${doc.name}</div>
+<div class="video-size">${formatFileSize(doc.size)}</div>
+</div>
+<div class="video-actions">
+<button class="download-btn" onclick="copyLinkToClipboard('${doc.url.replace(/'/g, "\\'")}', '${doc.name.replace(/'/g, "\\'")}')">📋 COPY LINK</button>
+</div>
+`;
+docList.appendChild(fileItem);
+});
+
+docSection.appendChild(docList);
+contentArea.appendChild(docSection);
+}
+
+if (folders.length > 0) {
+const folderHeader = document.createElement('div');
+folderHeader.style.cssText = 'font-size: 0.9em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; font-weight: 600;';
+folderHeader.textContent = `📁 Product Folders (${folders.length})`;
+contentArea.appendChild(folderHeader);
+
+const grid = document.createElement('div');
+grid.className = 'folder-grid';
+
+folders.forEach(folder => {
+const folderItem = document.createElement('div');
+folderItem.className = 'folder-item';
+folderItem.innerHTML = `
+<div class="folder-icon">📁</div>
+<div class="folder-name">${folder.name}</div>
+<div class="folder-count">${folder.count} video${folder.count !== 1 ? 's' : ''}</div>
+<button class="download-btn" onclick="navigateToProduct('${folder.name}')" style="margin-top: 15px; width: 100%; padding: 12px; font-size: 0.85em;">
+👁️ VIEW FILES
+</button>
+`;
+grid.appendChild(folderItem);
+});
+
+contentArea.appendChild(grid);
+}
+
+if (folders.length === 0 && documents.length === 0) {
+content.innerHTML = '<div class="explorer-loading">No content found</div>';
+}
+
+} else {
+const { data: files, error } = await supabaseClient.storage
+.from(BUCKET)
+.list(`${folderPath}/${productName}`, {
+limit: 1000,
+sortBy: { column: 'name', order: 'asc' }
+});
+
+if (error) {
+console.error('Error loading videos:', error);
+content.innerHTML = `<div class="explorer-loading">Error: ${error.message}</div>`;
+return;
+}
+
+if (!files || files.length === 0) {
+content.innerHTML = '<div class="explorer-loading">No videos found</div>';
+return;
+}
+
+const videos = files
+.filter(f => f.name)
+.map(file => {
+const filePath = `${folderPath}/${productName}/${file.name}`;
+const { data: urlData } = supabaseClient.storage
+.from(BUCKET)
+.getPublicUrl(filePath);
+return {
+name: file.name,
+url: urlData.publicUrl,
+size: file.metadata?.size || 0
+};
+});
+
+displayVideos(videos, productName);
+}
+
+} catch (error) {
+console.error('Unexpected error loading folder:', error);
+content.innerHTML = `<div class="explorer-loading">Error: ${error.message}</div>`;
+}
+}
+
+function displayVideos(videos, productName) {
+const content = document.getElementById('explorerContent');
+const breadcrumb = document.getElementById('explorerBreadcrumb');
+
+breadcrumb.innerHTML = `
+<span class="breadcrumb-item" onclick="navigateToRoot()">📁 Root</span>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item">${productName}</span>
+`;
+
+content.innerHTML = `
+<button class="back-btn" onclick="navigateToRoot()">← BACK TO FOLDERS</button>
+<button class="download-all-btn" onclick="downloadAllVideos()">📥 DOWNLOAD ALL ${videos.length} VIDEOS</button>
+<div class="video-list" id="videoList"></div>
+`;
+
+const list = document.getElementById('videoList');
+videos.forEach(video => {
+const videoItem = document.createElement('div');
+videoItem.className = 'video-item';
+videoItem.innerHTML = `
+<div class="video-info">
+<div class="video-name">🎥 ${video.name}</div>
+<div class="video-size">${formatFileSize(video.size)}</div>
+</div>
+<div class="video-actions">
+<a href="${video.url}" class="download-btn" download target="_blank">DOWNLOAD</a>
+</div>
+`;
+list.appendChild(videoItem);
+});
+}
+
+async function loadVideoFolderContents(videoId) {
+const content = document.getElementById('explorerContent');
+const breadcrumb = document.getElementById('explorerBreadcrumb');
+content.innerHTML = '<div class="explorer-loading">Loading...</div>';
+
+try {
+console.log('🔍 Loading files for video ID:', videoId);
+
+const { data: rootFiles, error: rootError } = await supabaseClient.storage
+.from(BUCKET)
+.list(videoId, { limit: 1000, sortBy: { column: 'name', order: 'asc' } });
+
+if (rootError) {
+console.error('Error loading video root:', rootError);
+content.innerHTML = `<div class="explorer-loading">Error: ${rootError.message}</div>`;
+return;
+}
+
+let allFiles = [];
+
+if (rootFiles && rootFiles.length > 0) {
+for (const file of rootFiles) {
+if (!file.name) continue;
+
+if (file.name.includes('.')) {
+const filePath = `${videoId}/${file.name}`;
+const { data: urlData } = supabaseClient.storage
+.from(BUCKET)
+.getPublicUrl(filePath);
+
+allFiles.push({
+name: file.name,
+url: urlData.publicUrl,
+size: file.metadata?.size || 0,
+type: 'document'
+});
+}
+else {
+const folderName = file.name;
+const { data: subFiles, error: subError } = await supabaseClient.storage
+.from(BUCKET)
+.list(`${videoId}/${folderName}`, { limit: 1000 });
+
+if (!subError && subFiles && subFiles.length > 0) {
+for (const subFile of subFiles) {
+if (!subFile.name || !subFile.name.includes('.')) continue;
+
+const filePath = `${videoId}/${folderName}/${subFile.name}`;
+const ext = subFile.name.toLowerCase();
+
+if (ext.endsWith('.doc') || ext.endsWith('.docx') || ext.endsWith('.txt') || ext.endsWith('.pdf')) {
+const { data: urlData } = supabaseClient.storage
+.from(BUCKET)
+.getPublicUrl(filePath);
+
+allFiles.push({
+name: subFile.name,
+url: urlData.publicUrl,
+size: subFile.metadata?.size || 0,
+type: 'document'
+});
+}
+else if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi') || ext.endsWith('.mkv') || ext.endsWith('.webm')) {
+const { data: urlData } = supabaseClient.storage
+.from(BUCKET)
+.getPublicUrl(filePath);
+
+allFiles.push({
+name: subFile.name,
+url: urlData.publicUrl,
+size: subFile.metadata?.size || 0,
+type: 'video'
+});
+}
+}
+}
+}
+}
+}
+console.log('✅ All files collected:', allFiles);
+
+if (allFiles.length === 0) {
+content.innerHTML = '<div class="explorer-loading">No files found</div>';
+breadcrumb.innerHTML = '';
+return;
+}
+
+const videos = allFiles.filter(f => f.type === 'video');
+const documents = allFiles.filter(f => f.type === 'document');
+
+console.log('📄 Documents:', documents.length);
+console.log('🎥 Videos:', videos.length);
+
+breadcrumb.innerHTML = '<span class="breadcrumb-item">📁 All Files</span>';
+
+content.innerHTML = `
+<button class="download-all-btn" onclick="downloadAllVideosOnly()">📥 DOWNLOAD ALL VIDEOS</button>
+<div class="video-list" id="fileList"></div>
+`;
+
+const list = document.getElementById('fileList');
+
+if (documents.length > 0) {
+const docHeader = document.createElement('div');
+docHeader.style.cssText = 'font-size: 0.9em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; font-weight: 600;';
+docHeader.textContent = `📄 Documents (${documents.length})`;
+list.appendChild(docHeader);
+
+documents.forEach(doc => {
+const fileItem = document.createElement('div');
+fileItem.className = 'video-item';
+fileItem.innerHTML = `
+<div class="video-info">
+<div class="video-name">📄 ${doc.name}</div>
+<div class="video-size">${formatFileSize(doc.size)}</div>
+</div>
+<div class="video-actions">
+<button class="download-btn" onclick="copyLinkToClipboard('${doc.url.replace(/'/g, "\\'")}', '${doc.name.replace(/'/g, "\\'")}')">📋 COPY LINK</button>
+</div>
+`;
+list.appendChild(fileItem);
+});
+}
+
+if (videos.length > 0) {
+const videoHeader = document.createElement('div');
+videoHeader.style.cssText = 'font-size: 0.9em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; font-weight: 600;';
+videoHeader.textContent = `🎥 Videos (${videos.length})`;
+list.appendChild(videoHeader);
+
+videos.forEach(video => {
+const videoItem = document.createElement('div');
+videoItem.className = 'video-item';
+videoItem.innerHTML = `
+<div class="video-info">
+<div class="video-name">🎥 ${video.name}</div>
+<div class="video-size">${formatFileSize(video.size)}</div>
+</div>
+<div class="video-actions">
+<a href="${video.url}" class="download-btn" download="${video.name}" target="_blank">DOWNLOAD</a>
+</div>
+`;
+list.appendChild(videoItem);
+});
+}
+
+window.currentAllFiles = allFiles;
+
+} catch (error) {
+console.error('❌ Error loading video folder:', error);
+content.innerHTML = `<div class="explorer-loading">Error: ${error.message}</div>`;
+}
+}
+
+function downloadAllVideosOnly() {
+if (!window.currentAllFiles || window.currentAllFiles.length === 0) {
+const videoLinks = document.querySelectorAll('.video-item a.download-btn');
+if (videoLinks.length > 0) {
+videoLinks.forEach((link, index) => {
+setTimeout(() => {
+link.click();
+}, index * 200);
+});
+showNotification(`Downloading ${videoLinks.length} videos...`, 'info');
+return;
+}
+showNotification('No videos to download', 'error');
+return;
+}
+
+const videos = window.currentAllFiles.filter(f => f.type === 'video');
+
+if (videos.length === 0) {
+showNotification('No videos to download', 'error');
+return;
+}
+
+showNotification(`Downloading ${videos.length} video${videos.length !== 1 ? 's' : ''}...`, 'info');
+videos.forEach((video, index) => {
+setTimeout(() => {
+const link = document.createElement('a');
+link.href = video.url;
+link.download = video.name;
+link.target = '_blank';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+}, index * 500);
+});
+}
+
+function markItemDone(type, strategyNumber, videoId) {
+const identifier = type === 'bank' ? `Strategy ${strategyNumber}` : `Video ${videoId}`;
+showConfirmModal(
+`Are you sure you want to mark ${identifier} as DONE?\n\nThis will change the status to "UNDER REVIEW".`,
+async () => {
+try {
+if (type === 'bank') {
+const { error } = await supabaseClient
+.from('tm_strategies')
+.update({ status: 'UNDER REVIEW' })
+.eq('strategy_number', strategyNumber);
+
+if (error) {
+console.error('Error updating strategy:', error);
+showNotification('Error updating strategy status', 'error');
+return;
+}
+
+showNotification(`Strategy ${strategyNumber} marked as UNDER REVIEW!`, 'success');
+
+} else if (type === 'video') {
+const { error } = await supabaseClient
+.from('videos')
+.update({ status: 'UNDER REVIEW' })
+.eq('id', videoId);
+
+if (error) {
+console.error('Error updating video:', error);
+showNotification('Error updating video status', 'error');
+return;
+}
+
+showNotification(`Video ${videoId} marked as UNDER REVIEW!`, 'success');
+}
+
+await loadStrategies();
+
+} catch (error) {
+console.error('Unexpected error:', error);
+showNotification('Unexpected error occurred', 'error');
+}
+}
+);
+}
+
+function showConfirmModal(message, onConfirm) {
+const modal = document.getElementById('confirmModal');
+const messageDiv = document.getElementById('confirmMessage');
+const yesBtn = document.getElementById('confirmYes');
+const noBtn = document.getElementById('confirmNo');
+
+messageDiv.textContent = message;
+modal.classList.add('show');
+
+yesBtn.onclick = () => {
+modal.classList.remove('show');
+onConfirm();
+};
+
+noBtn.onclick = () => {
+modal.classList.remove('show');
+};
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+console.log('TRUEMKT Editor Panel loaded successfully');
+});
+</script>
+</body>
+</html>
