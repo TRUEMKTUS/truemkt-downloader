@@ -1,4 +1,6 @@
 {
+  "buildCommand": "echo 'Build complete'",
+  "outputDirectory": "public",
   "functions": {
     "api/download-folder.js": {
       "memory": 3008,
