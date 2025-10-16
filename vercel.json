@@ -1,10 +1,6 @@
 {
-  "buildCommand": "echo 'Build complete'",
-  "outputDirectory": "public",
-  "functions": {
-    "api/download-folder.js": {
-      "memory": 3008,
-      "maxDuration": 60
-    }
-  }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/public/index.html" }
+  ]
 }
